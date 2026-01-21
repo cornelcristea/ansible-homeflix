@@ -16,6 +16,13 @@ This Ansible role deploys a full **HomeFlix media server stack** with Docker con
 - **Bazarr:** Subtitle manager  
 
 
+## Requirements
+- Linux host
+- Docker & Docker Compose
+- Ansible ≥ 2.14
+- Traefik (optional for Reverse Proxy)
+
+
 ## Variables
 
 | Name | Description | Default | Notes |
