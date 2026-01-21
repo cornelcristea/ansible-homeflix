@@ -48,17 +48,13 @@ This Ansible role deploys a full **HomeFlix media server stack** with Docker con
 - Traefik reverse proxy is optional — enable by uncommenting `homeflix_traefik_network` variable.  
 - Always use **encrypted passwords** in host_vars for sensitive services.  
 - Make sure **ports are available** and **media folders exist** before deployment.  
-- After deployment, update API keys and passwords to secure values.  
+- <b>After deployment, update API keys and passwords to secure values.</b>
 
 ## Knowing issues
 - For Radarr, the `Rename movies` option cannot be enabled via API and it has to be enabled manually from Web UI
-
 - `Root folder` for Radarr and Sonarr cannot be set via API so, they have to be set manually from Web UI
-
 - Seerr cannot be configured automatically using API.
-
 - For Bazarr, the `language profile` has to be set manually
-
 - <b>The role does not contain any VPN</b>
 
 ## Example Playbook
