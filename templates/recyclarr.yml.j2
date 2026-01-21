@@ -1,0 +1,29 @@
+---
+{% set services_list = ["sonarr", "radarr"] %}
+{% for service in services_list %}
+{{ service }}:
+  {{ service }}-web-hd:
+    base_url: http://{{ service }}:{{ lookup('vars', 'homeflix_' + service + '_port') }}
+    api_key: {{ lookup('vars', service + '_api_key') }}
+    quality_definition:
+      type: {{ "series" if service == "sonarr" else "movie" }}
+    quality_profiles:
+      - name: HD - 720p/1080p
+        reset_unmatched_scores: 
+          enabled: true
+        qualities:
+          - name: WEBDL-1080p
+          - name: WEBDL-720p
+          - name: WEBRip-1080p
+          - name: WEBRip-720p
+        upgrade:
+          allowed: true
+          until_quality: WEBDL-1080p
+    # Comment custom_formats to accept any WEBDL or WEBRip source
+    # custom_formats:
+    #   - trash_ids:
+    #       - d660701077794679fd59e8bdf4ce3a29 # WEB-DL
+    #       - f67c9ca88f463a48346062e8ad07713f # WEBRip
+    #     assign_scores_to:
+    #       - name: WEB-1080p
+{% endfor %}

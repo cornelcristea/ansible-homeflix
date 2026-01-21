@@ -1,0 +1,32 @@
+---
+- name: Recyclarr | Check Radarr configuration
+  slurp:
+    src: "{{ homeflix_apps_volume }}/radarr/config.xml"
+  register: radarr_xml
+
+- name: Recyclarr | Check Sonarr configuration
+  slurp:
+    src: "{{ homeflix_apps_volume }}/sonarr/config.xml"
+  register: sonarr_xml
+
+- name: Recyclarr | Generate settings file
+  vars:
+    radarr_api_key: "{{ ((radarr_xml.content | b64decode) | regex_findall('<ApiKey>(.*?)</ApiKey>'))[0] }}"
+    sonarr_api_key: "{{ ((sonarr_xml.content | b64decode) | regex_findall('<ApiKey>(.*?)</ApiKey>'))[0] }}"
+  template:
+    src: recyclarr.yml.j2
+    dest: "{{ homeflix_apps_volume }}/recyclarr/recyclarr.yml"
+    owner: 1000
+    group: 1000
+    mode: 0644
+  register: recyclarr_yml
+
+- name: Recyclarr | Please read this message
+  debug:
+    msg: "The 'Sync quality profiles' task will take a few minutes to complete first time. Please be patient."
+
+- name: Recyclarr | Sync quality profiles
+  become: true
+  command: docker exec recyclarr recyclarr sync --debug
+  register: sync_profiles
+  failed_when: sync_profiles.stdout_lines | select("search", "\[ERR\]|Errors") | list | length > 0

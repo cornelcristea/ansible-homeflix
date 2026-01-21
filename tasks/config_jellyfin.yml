@@ -1,0 +1,288 @@
+---
+- name: Jellyfin | Check configuration
+  become: true
+  slurp:
+    src: "{{ homeflix_apps_volume }}/jellyfin/system.xml"
+  register: system_xml
+
+- name: Jellyfin | Determine first run
+  set_fact:
+    jellyfin_first_run: "{{ ('<IsStartupWizardCompleted>false</IsStartupWizardCompleted>' in (system_xml.content | b64decode | string)) }}"
+
+- name: block - First run tasks
+  block:
+    - include_tasks: common/stop_service.yml
+      vars:
+        service_name: jellyfin
+
+    - name: Jellyfin | Remove initial installation
+      file:
+        path: "{{ homeflix_apps_volume }}/jellyfin"
+        state: absent
+
+    - name: Jellyfin | Extract preconfigured installation
+      unarchive:
+        src: jellyfin.tar.xz
+        dest: "{{ homeflix_apps_volume }}"
+        remote_src: false
+        owner: 1000
+        group: 1000
+        mode: 0755
+
+    - include_tasks: common/restart_service.yml
+      vars:
+        service_name: jellyfin
+
+    - name: Jellyfin | Wait until configuration is completed
+      uri:
+        url: "http://{{ homeflix_jellyfin_host }}/Startup/Configuration"
+        method: GET
+        headers:
+          X-Emby-Token: "{{ homeflix_jellyfin_api_key }}"
+      register: jellyfin_up
+      until: jellyfin_up.status == 200
+      retries: 30
+      delay: 5
+  when: jellyfin_first_run
+
+- name: block - Manage server name
+  block:
+    - name: Jellyfin | Get current server name
+      uri:
+        url: "http://{{ homeflix_jellyfin_host }}/Startup/Configuration"
+        method: GET
+        headers:
+          X-Emby-Token: "{{ homeflix_jellyfin_api_key }}"
+        return_content: true
+      register: startup_config
+
+    - name: Jellyfin | Update server name
+      uri:
+        url: "http://{{ homeflix_jellyfin_host }}/Startup/Configuration"
+        method: POST
+        headers:
+          X-Emby-Token: "{{ homeflix_jellyfin_api_key }}"
+          Content-Type: "application/json"
+        body_format: json
+        body:
+          ServerName: "{{ homeflix_jellyfin_server_name }}"
+        status_code: 204
+        follow_redirects: all
+      when: startup_config.json.ServerName != homeflix_jellyfin_server_name
+  tags:
+    - update_jellyfin_server_name
+
+- name: block - Manage users tasks
+  block:
+    - name: Jellyfin | Get existing users
+      uri:
+        url: "http://{{ homeflix_jellyfin_host }}/Users"
+        method: GET
+        headers:
+          X-Emby-Token: "{{ homeflix_jellyfin_api_key }}"
+        return_content: true
+        status_code: 200
+      register: existing_users
+
+    - name: Jellyfin | Add users
+      vars:
+        existing_users_names: "{{ existing_users.json | map(attribute='Name') | list }}"
+      uri:
+        url: "http://{{ homeflix_jellyfin_host }}/Users/New"
+        method: POST
+        headers:
+          X-Emby-Token: "{{ homeflix_jellyfin_api_key }}"
+          Content-Type: "application/json"
+        body_format: json
+        body:
+          Name: "{{ item.username }}"
+          Password: "{{ item.password }}"
+        status_code: 200
+        follow_redirects: all
+      loop: "{{ homeflix_jellyfin_users }}"
+      loop_control:
+        label: "{{ item.username }}"
+      when: item.username not in existing_users_names
+
+    - name: Jellyfin | Delete users
+      vars:
+        users_to_keep: "{{ (homeflix_jellyfin_users | map(attribute='username') | list) + ['admin'] }}"
+        users_to_delete: "{{ existing_users.json | rejectattr('Name', 'in', users_to_keep) | list }}"
+      uri:
+        url: "http://{{ homeflix_jellyfin_host }}/Users/{{ item.Id }}"
+        method: DELETE
+        headers:
+          X-Emby-Token: "{{ homeflix_jellyfin_api_key }}"
+        status_code: 204
+        follow_redirects: all
+      loop: "{{ users_to_delete }}"
+      loop_control:
+        label: "{{ item.Name }}"
+      when: users_to_delete | length > 0
+
+    - name: Jellyfin | Update users policy
+      vars:
+        user_info: "{{ (existing_users.json | selectattr('Name', 'equalto', item.username) | list)[0] }}"
+        user_id: "{{ user_info.Id }}"
+        user_policy: "{{ user_info.Policy | default({}) }}"
+      uri:
+        url: "http://{{ homeflix_jellyfin_host }}/Users/{{ user_id }}/Policy"
+        method: POST
+        headers:
+          X-Emby-Token: "{{ homeflix_jellyfin_api_key }}"
+          Content-Type: "application/json"
+        body_format: json
+        body:
+          IsHidden: true #"{{ user_policy.IsAdministrator | default(false) }}"
+          AuthenticationProviderId: "Jellyfin.Server.Implementations.Users.DefaultAuthenticationProvider"
+          PasswordResetProviderId: "Jellyfin.Server.Implementations.Users.DefaultPasswordResetProvider"
+        status_code: 204
+        follow_redirects: all
+      loop: "{{ homeflix_jellyfin_users }}"
+      loop_control:
+        label: "{{ item.username }}"
+      when: (user_policy.IsHidden | default(false)) != (user_policy.IsAdministrator | default(false))
+  tags:
+    - update_jellyfin_users
+
+# NOTE:
+# library location fields in not reconized via API request (it has to be added manually from Web UI)
+# TO DO:
+# delete libraries with Ansible
+- name: block - Manage libraries tasks
+  block:
+    - name: Jellyfin | Get existing libraries
+      uri:
+        url: "http://{{ homeflix_jellyfin_host }}/Library/VirtualFolders"
+        method: GET
+        headers:
+          X-Emby-Token: "{{ homeflix_jellyfin_api_key }}"
+        return_content: true
+        status_code: 200
+      register: existing_libraries
+
+    - name: Jellyfin | Create libraries
+      uri:
+        url: "http://{{ homeflix_jellyfin_host }}/Library/VirtualFolders?name={{ item.name | urlencode }}&CollectionType={{ item.collection_type }}"
+        method: POST
+        headers:
+          X-Emby-Token: "{{ homeflix_jellyfin_api_key }}"
+          Content-Type: application/json
+        body_format: json
+        body:
+          Locations: ["{{ item.location }}"]
+          LibraryOptions:
+            AutomaticRefreshIntervalDays: 1
+        status_code: 204
+        follow_redirects: all
+      loop: "{{ homeflix_jellyfin_libraries }}"
+      loop_control:
+        label: "{{ item.name }}"
+      when: >
+        existing_libraries.json | selectattr('Name', 'equalto', item.name) | list | length == 0
+
+    - name: Jellyfin | Refresh libraries
+      uri:
+        url: "http://{{ homeflix_jellyfin_host }}/Library/Refresh"
+        method: POST
+        headers:
+          X-Emby-Token: "{{ homeflix_jellyfin_api_key }}"
+        status_code: 204
+        follow_redirects: all
+  tags:
+    - update_jellyfin_libraries
+# TO DO:
+# Improve the installation way for plugins
+- name: block - Manage plugins tasks
+  block:
+    - name: Jellyfin | Get installed plugins
+      uri:
+        url: "http://{{ homeflix_jellyfin_host }}/Plugins"
+        method: GET
+        headers:
+          X-Emby-Token: "{{ homeflix_jellyfin_api_key }}"
+          Accept: "application/json"
+        return_content: true
+      register: installed_plugins
+
+    - name: Jellyfin | Search for host plugins file
+      stat:
+        path: "{{ inventory_dir }}/host_vars/{{ inventory_hostname }}/plugins.txt"
+      register: plugins_file_host
+
+    - name: Jellyfin | Determine the plugins file path
+      set_fact:
+        plugins_file_path: >-
+          {{ (plugins_file_host.stat.exists
+            | ternary(
+              inventory_dir ~ '/host_vars/' ~ inventory_hostname ~ '/plugins.txt',
+              role_path ~ '/files/plugins.txt')
+            )
+          }}
+
+    - name: Jellyfin | Set facts for plugins
+      set_fact:
+        plugins_file_content: "{{ lookup('file', plugins_file_path).splitlines() }}"
+        plugins_to_install: "{{ lookup('file', plugins_file_path).splitlines() | map('basename') | map('regex_replace', '\\.zip$', '') | list }}"
+        installed_plugins_names: "{{ installed_plugins.json | map(attribute='Name') | list }}"
+        plugins_dir: "{{ homeflix_apps_volume }}/jellyfin/data/plugins"
+
+    - name: Jellyfin | Check plugins folder
+      find:
+        paths: "{{ plugins_dir }}"
+        recurse: false
+      register: plugin_items
+
+    - name: Jellyfin | Download plugins
+      get_url:
+        url: "{{ item }}"
+        dest: "/tmp/{{ item | basename }}"
+      register: download_plugins
+      loop: "{{ plugins_file_content }}"
+      loop_control:
+        label: "{{ item | basename }}"
+      when: "(item | basename | regex_replace('\\.zip$', '')) not in installed_plugins_names"
+
+    - name: Jellyfin | Create plugins directory
+      file:
+        path: "{{ plugins_dir }}/{{ item.item | basename | regex_replace('\\.zip$', '') }}"
+        state: directory
+        owner: 1000
+        group: 1000
+        mode: 0755
+      loop: "{{ download_plugins.results }}"
+      loop_control:
+        label: "{{ item.item | basename | regex_replace('\\.zip$', '') }}"
+
+    - name: Jellyfin | Install plugins
+      unarchive:
+        src: "/tmp/{{ item.item | basename }}"
+        dest: "{{ plugins_dir }}/{{ item.item | basename | regex_replace('\\.zip$', '') }}"
+        remote_src: true
+        owner: 1000
+        group: 1000
+        mode: 0755
+        creates: "{{ plugins_dir }}/{{ item.item | basename | regex_replace('\\.zip$', '') }}/plugin.json"
+      register: install_plugins
+      loop: "{{ download_plugins.results }}"
+      loop_control:
+        label: "{{ item.item | basename | regex_replace('\\.zip$', '') }}"
+
+    - include_tasks: common/restart_service.yml
+      vars:
+        service_name: jellyfin
+      when: install_plugins.changed
+
+    - name: Jellyfin | Wait for service to be up
+      uri:
+        url: "http://{{ homeflix_jellyfin_host }}/Startup/Configuration"
+        method: GET
+        headers:
+          X-Emby-Token: "{{ homeflix_jellyfin_api_key }}"
+      register: jellyfin_up
+      until: jellyfin_up.status == 200
+      retries: 30
+      delay: 5
+      when: install_plugins.changed
+  tags:
+    - update_jellyfin_plugins

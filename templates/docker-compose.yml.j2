@@ -1,0 +1,48 @@
+---
+services:
+{% for service in homeflix_docker_services %}
+  {{ service.name }}:
+    image: {{ service.image }}
+    container_name: {{ service.name }}
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    environment:
+      - PUID="{{ homeflix_puid }}"
+      - PGID="{{ homeflix_pgid }}"
+      - TZ={{ homeflix_timezone }}
+{% if service.name != "flaresolverr" %}
+    volumes:
+      - "{{ homeflix_apps_volume }}/{{ service.name }}:/config"
+      - "{{ homeflix_data_volume }}:/data"
+{% endif %}
+{% if homeflix_traefik_network is defined %}
+    networks:
+      - {{ homeflix_traefik_network }}
+{% if service.labels is defined %}
+    labels:
+{% for label in service.labels %}
+      - "{{ label }}"
+{% endfor %}   
+{% endif -%} 
+{% endif -%}
+
+{% if service.ports is defined and service.ports | length > 0
+   and not (homeflix_traefik_network is defined and service.name in ["jellyfin", "seerr"]) %}
+    ports:
+{% for port in service.ports %}
+      - "{{ port }}"
+{% endfor %}
+{% endif %}
+
+{% endfor %}
+
+{%- if homeflix_traefik_network is defined %}
+networks:
+  {{ homeflix_traefik_network }}:
+    external: true
+{% endif -%}
+

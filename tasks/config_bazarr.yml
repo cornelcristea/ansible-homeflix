@@ -1,0 +1,64 @@
+---
+- include_tasks: common/wait_for_service.yml
+  vars:
+    service_name: bazarr
+    service_port: "{{ homeflix_bazarr_port }}"
+
+- name: Bazarr | Check configuration
+  become: true
+  slurp:
+    src: "{{ homeflix_apps_volume }}/bazarr/config/config.yaml"
+  register: config_yaml
+
+- name: Bazarr | Determine first run
+  set_fact:
+    bazarr_first_run: "{{ (config_yaml.content | b64decode | from_yaml).auth.type is none }}"
+
+- name: block - First run tasks
+  block:
+    - include_tasks: common/stop_service.yml
+      vars:
+        service_name: bazarr
+
+    - name: Bazarr | Check Sonarr configuration
+      become: true
+      slurp:
+        src: "{{ homeflix_apps_volume }}/sonarr/config.xml"
+      register: sonarr_xml
+
+    - name: Bazarr | Check Radarr configuration
+      become: true
+      slurp:
+        src: "{{ homeflix_apps_volume }}/radarr/config.xml"
+      register: radarr_xml
+
+    - name: Bazarr | Copy database
+      copy:
+        src: bazarr.db
+        dest: "{{ homeflix_apps_volume }}/bazarr/db/bazarr.db"
+        owner: 1000
+        group: 1000
+        mode: 0755
+
+    - name: Bazarr | Generate config file
+      vars:
+        sonarr_api_key: "{{ ((sonarr_xml.content | b64decode) | regex_findall('<ApiKey>(.*?)</ApiKey>'))[0] }}"
+        radarr_api_key: "{{ ((radarr_xml.content | b64decode) | regex_findall('<ApiKey>(.*?)</ApiKey>'))[0] }}"
+      template:
+        src: config.yaml.j2
+        dest: "{{ homeflix_apps_volume }}/bazarr/config/config.yaml"
+        owner: 1000
+        group: 1000
+        mode: 0755
+
+    - include_tasks: common/restart_service.yml
+      vars:
+        service_name: bazarr
+
+    - include_tasks: common/wait_for_service.yml
+      vars:
+        service_name: bazarr
+        service_port: "{{ homeflix_bazarr_port }}"
+  when: bazarr_first_run
+# TO DO:
+# Add language profile within API

@@ -1,0 +1,137 @@
+---
+- name: Seerr | Check settings
+  become: true
+  slurp:
+    src: "{{ homeflix_apps_volume }}/seerr/settings.json"
+  register: settings_file
+
+- name: Seerr | Check Radarr configuration
+  slurp:
+    src: "{{ homeflix_apps_volume }}/radarr/config.xml"
+  register: radarr_xml
+
+- name: Seerr | Check Sonarr configuration
+  slurp:
+    src: "{{ homeflix_apps_volume }}/sonarr/config.xml"
+  register: sonarr_xml
+
+- name: Seerr | Set fact for settings
+  set_fact:
+    settings_file_json: "{{ settings_file.content | b64decode | from_json }}"
+
+# - name: Seerr | Determine first run
+#   set_fact:
+#     seerr_first_run: "{{ not settings_file_json.public.initialized }}"
+#     seerr_api_key: "{{ settings_file_json.main.apiKey }}"
+
+# - name: block - First run tasks
+#   block:
+#     - include_tasks: common/stop_service.yml
+#       vars:
+#         service_name: seerr
+
+#     - name: Seerr | Remove initial installation
+#       file:
+#         path: "{{ homeflix_apps_volume }}/Seerr"
+#         state: absent
+
+#     - name: Seerr | Get jellyfin system info
+#       uri:
+#         url: "http://{{ homeflix_jellyfin_host }}/System/Info"
+#         headers:
+#           X-Emby-Token: "{{ homeflix_jellyfin_api_key }}"
+#         return_content: true
+#       register: jf_info
+
+#     - name: Seerr | Get jellyfin libraries
+#       uri:
+#         url: "http://{{ homeflix_jellyfin_host }}/Library/VirtualFolders"
+#         method: GET
+#         headers:
+#           X-Emby-Token: "{{ homeflix_jellyfin_api_key }}"
+#         return_content: true
+#         status_code: 200
+#       register: jf_libs
+
+#     - name: Seerr | Generate settings file
+#       vars:
+#         client_id: "{{ settings_file_json.clientId }}"
+#         vapid_private: "{{ settings_file_json.vapidPrivate }}"
+#         vapid_public: "{{ settings_file_json.vapidPublic }}"
+#         webhook_json_payload: "{{ settings_file_json.notifications.agents.webhook.options.jsonPayload }}"
+#         jf_api_key: "{{ lookup('community.general.random_string', length=32, special=false, upper=false) }}"
+#         jf_server_id: "{{ jf_info.json.Id }}"
+#         jf_libs_json: "{{ jf_libs.json }}"
+#         radarr_api_key: "{{ ((radarr_xml.content | b64decode) | regex_findall('<ApiKey>(.*?)</ApiKey>'))[0] }}"
+#         sonarr_api_key: "{{ ((sonarr_xml.content | b64decode) | regex_findall('<ApiKey>(.*?)</ApiKey>'))[0] }}"
+#       template:
+#         src: settings.json.j2
+#         dest: "{{ homeflix_apps_volume }}/seerr/settings.json"
+#         owner: 1000
+#         group: 1000
+#         mode: 0755
+
+#     - name: Seerr | Copy database
+#       copy:
+#         src: db.sqlite3
+#         dest: "{{ homeflix_apps_volume }}/seerr/db/db.sqlite3"
+#         owner: 1000
+#         group: 1000
+#         mode: 0755
+
+#     - include_tasks: common/restart_service.yml
+#       vars:
+#         service_name: seerr
+
+#     - include_tasks: common/wait_for_service.yml
+#       vars:
+#         service_name: seerr
+#         service_port: "{{ homeflix_seerr_port }}"
+#   when: seerr_first_run
+
+# - name: Add services
+#    vars:
+#      services_to_add:
+#         - { name: "Sonarr", url: "http://sonarr:{{ homeflix_sonarr_port }}", apiKey: "API_KEY", type: "sonarr" }
+#         - { name: "Radarr", url: "http://radarr:{{ homeflix_radarr_port }}", apiKey: "API_KEY", type: "radarr" }
+#   uri:
+#     url: "http://{{ ansible_host }}:{{ homeflix_seerr_port }}/api/server/{{ item.type }}"
+#     method: POST
+#     headers:
+#       Content-Type: "application/json"
+#       Authorization: "Bearer {{ seerr_api_token }}"
+#     body_format: json
+#     body: "{{ item }}"
+#     status_code: 201
+#   loop: "{{ services_to_add }}""
+#   loop_control:
+#     labels: "{{ item.name }}"
+
+- set_fact:
+    radarr_api_key: "{{ ((radarr_xml.content | b64decode) | regex_findall('<ApiKey>(.*?)</ApiKey>'))[0] }}"
+    sonarr_api_key: "{{ ((sonarr_xml.content | b64decode) | regex_findall('<ApiKey>(.*?)</ApiKey>'))[0] }}"
+
+- name: Create configuration txt file
+  copy:
+    dest: /tmp/seerr.txt
+    content: |
+      Seerr (manual configuration)
+      ====================================
+      1. Click here {% if homeflix_traefik_network is defined %} http://{{ homeflix_seerr_domain }} {% else %} http://{{ ansible_host }}:{{ homeflix_seerr_port }} {% endif %}
+      2. Choose Jellyfin server
+      3. Jellyfin URL: http://jellyfin or, if you use DNS, complete with your domain and check 'Use SSL' box
+      4. Choose your credentials for admin user
+      5. Sync libraries and enable Movies and TV Shows (optional you can press Start Scan)
+      6. Add Sonarr and Radarr as default servers with the following API keys:
+        - Sonarr API Key: {{ sonarr_api_key }}
+          Hostname: http://sonarr
+          Port: {{ homeflix_sonarr_port }}
+        - Radarr API Key: {{ radarr_api_key }}
+          Hostname: http://radarr
+          Port: {{ homeflix_radarr_port }}
+      7. Enjoy!
+  delegate_to: localhost
+
+- name: Display configuration message
+  debug:
+    msg: Open '/tmp/seerr.txt' to see manual configuration steps for Seerr

@@ -1,0 +1,26 @@
+---
+galaxy_info:
+  role_name: homeflix
+  author: Cornel Cristea
+  description: Deploy Jellyfin, Sonarr, Radarr, Lidarr, etc. to create a media server.
+
+  license: MIT
+
+  min_ansible_version: 2.1
+
+  platforms:
+    - name: Debian
+      versions:
+        - all
+
+  galaxy_tags:
+    - jellyfin
+    - sonarr
+    - radarr
+    - lidarr
+    - seerr
+    - prowlarr
+    - profilarr
+    - bazarr
+
+dependencies: []

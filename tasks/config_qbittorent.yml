@@ -1,0 +1,41 @@
+---
+- name: qBittorrent | Check configuration
+  become: true
+  slurp:
+    src: "{{ homeflix_apps_volume }}/qbittorrent/qBittorrent/qBittorrent.conf"
+  register: conf_file
+
+- name: qBittorrent | Determine first run
+  set_fact:
+    qbittorrent_first_run: "{{ 'Password_PBKDF2' not in (conf_file.content | b64decode) }}"
+
+- name: block - First run tasks
+  block:
+    - include_tasks: common/stop_service.yml
+      vars:
+        service_name: qbittorrent
+
+    - name: qBittorrent | Generate config file
+      vars:
+        qb_files:
+          - qBittorrent.conf.j2
+          - categories.json.j2
+      template:
+        src: "{{ item }}"
+        dest: "{{ homeflix_apps_volume }}/qbittorrent/qBittorrent/{{ item | basename | splitext | first }}"
+        owner: 1000
+        group: 1000
+        mode: 0755
+      loop: "{{ qb_files }}"
+      loop_control:
+        label: "{{ item | basename | splitext | first }}"
+
+    - include_tasks: common/restart_service.yml
+      vars:
+        service_name: qbittorrent
+
+    - include_tasks: common/wait_for_service.yml
+      vars:
+        service_name: qbittorrent
+        service_port: "{{ homeflix_qbittorrent_port }}"
+  when: qbittorrent_first_run

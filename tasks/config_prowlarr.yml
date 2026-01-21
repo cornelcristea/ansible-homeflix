@@ -1,0 +1,185 @@
+---
+- include_tasks: common/wait_for_service.yml
+  vars:
+    service_name: prowlarr
+    service_port: "{{ homeflix_prowlarr_port }}"
+
+- name: Prowlarr | Check configuration
+  become: true
+  slurp:
+    src: "{{ homeflix_apps_volume }}/prowlarr/config.xml"
+  register: config_xml
+
+- name: Prowlarr | Determine first run
+  set_fact:
+    prowlarr_api_key: "{{ ((config_xml.content | b64decode) | regex_findall('<ApiKey>(.*?)</ApiKey>'))[0] }}"
+    prowlarr_first_run: "{{ ('<AuthenticationMethod>None</AuthenticationMethod>' in (config_xml.content | b64decode | string)) }}"
+
+- name: block - First run tasks
+  block:
+    - include_tasks: common/stop_service.yml
+      vars:
+        service_name: prowlarr
+
+    - name: Prowlarr | Copy database
+      copy:
+        src: prowlarr.db
+        dest: "{{ homeflix_apps_volume }}/prowlarr/prowlarr.db"
+        owner: 1000
+        group: 1000
+        mode: 0755
+
+    - name: Prowlarr | Update config file
+      replace:
+        path: "{{ homeflix_apps_volume }}/prowlarr/config.xml"
+        regexp: "<AuthenticationMethod>None</AuthenticationMethod>"
+        replace: "<AuthenticationMethod>Forms</AuthenticationMethod>"
+
+    - include_tasks: common/restart_service.yml
+      vars:
+        service_name: prowlarr
+
+    - include_tasks: common/wait_for_service.yml
+      vars:
+        service_name: prowlarr
+        service_port: "{{ homeflix_prowlarr_port }}"
+  when: prowlarr_first_run
+
+- name: block - Manage indexers
+  block:
+    - name: Prowlarr | Get existing indexers
+      uri:
+        url: "http://{{ ansible_host }}:{{ homeflix_prowlarr_port }}/api/v1/indexer"
+        method: GET
+        headers:
+          X-Api-Key: "{{ prowlarr_api_key }}"
+        return_content: true
+      register: existing_indexers
+
+    - name: Prowlarr | Add indexers
+      vars:
+        existing_indexer_names: "{{ existing_indexers.json | map(attribute='name') | list }}"
+      uri:
+        url: "http://{{ ansible_host }}:{{ homeflix_prowlarr_port }}/api/v1/indexer"
+        method: POST
+        headers:
+          X-Api-Key: "{{ prowlarr_api_key }}"
+          Content-Type: "application/json"
+        body_format: json
+        body:
+          name: "{{ item.name }}"
+          enable: true
+          implementation: "{{ item.implementation }}"
+          configContract: "{{ item.config_contract }}"
+          appProfileId: 1
+          priority: "{{ item.priority | default(25) }}"
+          fields: "{{ item.fields | dict2items(key_name='name', value_name='value') }}"
+          tags: "{{ item.tags | default([]) }}"
+        status_code: 201
+      loop: "{{ homeflix_prowlarr_indexers }}"
+      loop_control:
+        label: "{{ item.name }}"
+      ignore_errors: true
+      when: item.name not in existing_indexer_names
+
+    - name: Prowlarr | Delete indexers
+      vars:
+        indexers_to_keep: "{{ homeflix_prowlarr_indexers | map(attribute='name') | list }}"
+        indexers_to_delete: "{{ existing_indexers.json | rejectattr('name', 'in', indexers_to_keep) | list }}"
+      uri:
+        url: "http://{{ ansible_host }}:{{ homeflix_prowlarr_port }}/api/v1/indexer/{{ item.id }}"
+        method: DELETE
+        headers:
+          X-Api-Key: "{{ prowlarr_api_key }}"
+        status_code: 200
+      loop: "{{ indexers_to_delete }}"
+      loop_control:
+        label: "{{ item.name }}"
+      when: indexers_to_delete | length > 0
+
+- name: block - Manage applications
+  block:
+    - name: Prowlarr | Get existing applications
+      uri:
+        url: "http://{{ ansible_host }}:{{ homeflix_prowlarr_port }}/api/v1/applications"
+        method: GET
+        headers:
+          X-Api-Key: "{{ prowlarr_api_key }}"
+        return_content: true
+      register: existing_apps
+
+      # Radarr
+    - name: Prowlarr | Check Radarr configuration
+      become: true
+      slurp:
+        src: "{{ homeflix_apps_volume }}/radarr/config.xml"
+      register: radarr_xml
+
+    - name: Prowlarr | Get Radarr api key
+      set_fact:
+        radarr_api_key: "{{ ((radarr_xml.content | b64decode) | regex_findall('<ApiKey>(.*?)</ApiKey>'))[0] }}"
+
+    - name: Prowlarr | Add Radarr application
+      vars:
+        radarr_exists: "{{ existing_apps.json | selectattr('name', 'equalto', 'Radarr') | list | length > 0 }}"
+      uri:
+        url: "http://{{ ansible_host }}:{{ homeflix_prowlarr_port }}/api/v1/applications"
+        method: POST
+        headers:
+          X-Api-Key: "{{ prowlarr_api_key }}"
+          Content-Type: "application/json"
+        body_format: json
+        body:
+          name: "Radarr"
+          implementation: "Radarr"
+          configContract: "RadarrSettings"
+          enable: true
+          syncLevel: 2
+          fields:
+            - name: "apiKey"
+              value: "{{ radarr_api_key }}"
+            - name: "baseUrl"
+              value: "http://radarr:{{ homeflix_radarr_port }}"
+            - name: "prowlarrUrl"
+              value: "http://prowlarr:{{ homeflix_prowlarr_port }}"
+          tags: []
+        status_code: 201
+      when: not radarr_exists
+
+      # Sonarr
+    - name: Prowlarr | Check Sonarr configuration
+      become: true
+      slurp:
+        src: "{{ homeflix_apps_volume }}/sonarr/config.xml"
+      register: sonarr_xml
+
+    - name: Prowlarr | Get Sonarr api key
+      set_fact:
+        sonarr_api_key: "{{ ((sonarr_xml.content | b64decode) | regex_findall('<ApiKey>(.*?)</ApiKey>'))[0] }}"
+
+    - name: Prowlarr | Add Sonarr application
+      vars:
+        sonarr_exists: "{{ existing_apps.json | selectattr('name', 'equalto', 'Sonarr') | list | length > 0 }}"
+      uri:
+        url: "http://{{ ansible_host }}:{{ homeflix_prowlarr_port }}/api/v1/applications"
+        method: POST
+        headers:
+          X-Api-Key: "{{ prowlarr_api_key }}"
+          Content-Type: "application/json"
+        body_format: json
+        body:
+          name: "Sonarr"
+          implementation: "Sonarr"
+          configContract: "SonarrSettings"
+          enable: true
+          syncLevel: 2
+          fields:
+            - name: "apiKey"
+              value: "{{ sonarr_api_key }}"
+            - name: "baseUrl"
+              value: "http://sonarr:{{ homeflix_sonarr_port }}"
+            - name: "prowlarrUrl"
+              value: "http://prowlarr:{{ homeflix_prowlarr_port }}"
+          tags: []
+        status_code: 201
+      when: not sonarr_exists

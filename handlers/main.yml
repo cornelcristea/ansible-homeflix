@@ -1,0 +1,6 @@
+---
+- name: Restart services
+  become: true
+  community.docker.docker_compose_v2:
+    project_src: "{{ homeflix_apps_volume }}"
+    state: restarted

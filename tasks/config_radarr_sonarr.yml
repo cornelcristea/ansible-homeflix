@@ -1,0 +1,82 @@
+# template task to config radarr and sonarr
+---
+- include_tasks: common/wait_for_service.yml
+
+- name: "{{ service_name | capitalize }} | Check configuration"
+  become: true
+  slurp:
+    src: "{{ homeflix_apps_volume }}/{{ service_name }}/config.xml"
+  register: config_xml
+
+- name: "{{ service_name | capitalize }} | Determine first run"
+  set_fact:
+    service_api_key: "{{ ((config_xml.content | b64decode) | regex_findall('<ApiKey>(.*?)</ApiKey>'))[0] }}"
+    service_first_run: "{{ ('<AuthenticationMethod>None</AuthenticationMethod>' in (config_xml.content | b64decode | string)) }}"
+
+- name: block - First run tasks
+  block:
+    - include_tasks: common/stop_service.yml
+
+    - name: "{{ service_name | capitalize }} | Copy database"
+      copy:
+        src: "{{ service_name }}.db"
+        dest: "{{ homeflix_apps_volume }}/{{ service_name }}/{{ service_name }}.db"
+        owner: 1000
+        group: 1000
+        mode: 0755
+
+    - name: "{{ service_name | capitalize }} | Update config file"
+      replace:
+        path: "{{ homeflix_apps_volume }}/{{ service_name }}/config.xml"
+        regexp: "<AuthenticationMethod>None</AuthenticationMethod>"
+        replace: "<AuthenticationMethod>Forms</AuthenticationMethod>"
+
+    - include_tasks: common/restart_service.yml
+
+    - include_tasks: common/wait_for_service.yml
+
+  when: service_first_run
+
+- name: "{{ service_name | capitalize }} | Get existing download clients"
+  uri:
+    url: "http://{{ ansible_host }}:{{ service_port }}/api/v3/downloadclient"
+    method: GET
+    headers:
+      X-Api-Key: "{{ service_api_key }}"
+  register: existing_download_clients
+
+- name: "{{ service_name | capitalize }} | Add qBittorrent download client"
+  vars:
+    qb_client_exists: "{{ existing_download_clients.json | selectattr('name', 'equalto', 'qBittorrent') | list | length > 0 }}"
+  uri:
+    url: "http://{{ ansible_host }}:{{ service_port }}/api/v3/downloadclient"
+    method: POST
+    headers:
+      X-Api-Key: "{{ service_api_key }}"
+      Content-Type: "application/json"
+    body_format: json
+    body:
+      enable: true
+      implementation: "QBittorrent"
+      implementationName: "qBittorrent"
+      name: "qBittorrent"
+      priority: 1
+      removeCompletedDownloads: true
+      removeFailedDownloads: true
+      fields:
+        - name: host
+          value: "qbittorrent"
+        - name: port
+          value: "{{ homeflix_qbittorrent_port }}"
+        - name: useSsl
+          value: false
+        - name: username
+          value: "admin"
+        - name: password
+          value: "{{ homeflix_qbittorrent_password }}"
+        - name: "{{ category_field }}"
+          value: "{{ category_value }}"
+      configContract: "QBittorrentSettings"
+      tags: []
+    status_code: 201
+  when: not qb_client_exists
