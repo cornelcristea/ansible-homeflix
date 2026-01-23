@@ -47,6 +47,6 @@ PRE_COMMANDS:
     cwd: "workspace"
     continue_if_failed: false
 
-# POST_COMMANDS:
-#   - command: echo "All done!"
-#     cwd: "workspace"
+POST_COMMANDS:
+  - command: echo "All done!"
+    cwd: "workspace"
