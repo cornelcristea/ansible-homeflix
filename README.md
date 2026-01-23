@@ -1,5 +1,14 @@
 # Ansible Role: Homeflix
 
+## Table of Contents
+
+- [Description](#description)
+- [Requirements](#requirements)
+- [Variables](#variables)
+- [Notes](#notes)
+- [Example Playbook](#example-playbook)
+- [Knowing issues](#knowing-issues)
+- [How to Contribute](#how-to-contribute)
 
 ## Description
 
@@ -48,40 +57,40 @@ Prowlarr (Indexers) --> Flaresolverr (Cloudflare bypass)
 
 ## Variables
 
-| Name | Description | Default | Notes |
-|----------|------------|---------|-------|
-| `homeflix_timezone` | Server timezone | `Europe/Bucharest` | Optional |
-| `homeflix_apps_volume` | Path to store application config | `/opt/homeflix` | Automatically created |
-| `homeflix_data_volume` | Path to media storage | `/mnt/homeflix` | Automatically created |
-| `homeflix_data_folders` | Media subfolders | `downloads, movies, tv` | Automatically created |
-| `homeflix_jellyfin_domain` | Jellyfin domain (for reverse proxy) | `localhost` | Update if using Traefik |
-| `homeflix_jellyfin_server_name` | Name displayed in Jellyfin UI | `HomeFlix` | Optional |
-| `homeflix_jellyfin_users` | List of users with passwords | `username`: homeflix<br> `password`: StrongPass123! | Encrypted passwords recommended |
-| `homeflix_jellyfin_libraries` | Media libraries | Movies & TV Shows |  |
-| `homeflix_prowlarr_indexers` | List of preconfigured indexers | 1337x, EZTV, LimeTorrents, The Pirate Bay, showRSS | based on Cardigann configuration |
-| `homeflix_qbittorrent_password` | Default qBittorrent password | `adminadmin` | Change after deployment |
-| `homeflix_bazarr_api_key` | Default Bazarr API key | `463482c2b8172db0ba2736f6a0b3dbc7` | Generate a new key after deployment |
-| `homeflix_jellyfin_api_key` | Default Jellyfin API key | `fae9789ce96847aeb834dec33c67ee8e` | Generate a new key after deployment |
-| `homeflix_puid` | UID for container user | `1000` | Matches host user |
-| `homeflix_pgid` | GID for container group | `1000` | Matches host group |
-| `homeflix_docker_services` | List of container definitions | See defaults | Includes ports, images, and Traefik labels |
-| `homeflix_jellyfin_port` | HTTP port for Jellyfin | `8096` | Optional HTTPS port: `8920` |
-| `homeflix_prowlarr_port` | HTTP port for Prowlarr | `9696` | Optional |
-| `homeflix_qbittorrent_port` | WebUI port for qBittorrent | `8080` | Also exposes torrent ports `6881/tcp/udp` |
-| `homeflix_radarr_port` | WebUI port for Radarr | `7878` | Optional |
-| `homeflix_sonarr_port` | WebUI port for Sonarr | `8989` | Optional |
-| `homeflix_bazarr_port` | WebUI port for Bazarr | `6767` | Optional |
-| `homeflix_seerr_port` | WebUI port for Seer | `5055` | Optional |
+| Name | Description | Default |
+|----------|------------|---------|
+| `homeflix_timezone` | Server timezone | `Europe/Bucharest` |
+| `homeflix_jellyfin_domain` | Jellyfin domain (for reverse proxy) | `localhost` |
+| `homeflix_jellyfin_server_name` | Name displayed in Jellyfin UI | `HomeFlix` |
+| `homeflix_jellyfin_users` | List of users with passwords | See defaults |
+| `homeflix_jellyfin_libraries` | Media libraries | Movies & TV Shows |
+| `homeflix_prowlarr_indexers` | List of preconfigured indexers | 1337x, EZTV, LimeTorrents, The Pirate Bay, showRSS |
+| `homeflix_qbittorrent_password` | Default qBittorrent password | See defaults |
+| `homeflix_bazarr_api_key` | Default Bazarr API key | See defaults |
+| `homeflix_jellyfin_api_key` | Default Jellyfin API key | See defaults |
 
 
 ## Notes
 
 - Traefik reverse proxy network is optional — enable by uncommenting `homeflix_traefik_network` variable.  
-- Each service has default **admin** user and its password is **admin** (for qBittorent, the password is **adminadmin**). After first deploy, the passowrds have to be changed.
+- Each service has default `admin` user and its password is `admin` (for qBittorent, the password is `adminadmin`). **After first deploy, the passowrds have to be changed.**
 - Jellyfin and Bazarr have a default API key that needs to be generated after first deploy and save them as variables (check `default.yml`). Do same thing with qBittorrent password.
 - Always use **encrypted passwords** in host_vars for sensitive services.  
 - Make sure **ports are available** and **media folders exist** before deployment.  
 - <b>After deployment, update API keys and passwords to secure values.</b>
+
+
+## Example Playbook
+
+```yaml
+- hosts: servers
+  vars:
+    homeflix_timezone: UTC
+    homeflix_jellyfin_domain: mediaserver.example.com
+    homeflix_jellyfin_server_name: MediaServer
+  roles:
+    - homeflix
+```
 
 
 ## Knowing issues
@@ -92,15 +101,6 @@ Prowlarr (Indexers) --> Flaresolverr (Cloudflare bypass)
 - Seerr cannot be configured using API.
 - <b>The role does not contain any VPN</b>
 
-
-## Example Playbook
-
-```yaml
-- hosts: servers
-  become: true
-  roles:
-    - homeflix
-```
 
 ## How to Contribute
 
