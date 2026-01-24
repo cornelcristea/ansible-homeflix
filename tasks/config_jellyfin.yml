@@ -149,8 +149,6 @@
       loop_control:
         label: "{{ item.username }}"
       when: (user_policy.IsHidden | default(false)) != (user_policy.IsAdministrator | default(false))
-  tags:
-    - update_jellyfin_users
 
 # NOTE:
 # library location fields in not reconized via API request (it has to be added manually from Web UI)
@@ -196,10 +194,7 @@
           X-Emby-Token: "{{ homeflix_jellyfin_api_key }}"
         status_code: 204
         follow_redirects: all
-  tags:
-    - update_jellyfin_libraries
-# TO DO:
-# Improve the installation way for plugins
+
 - name: block - Manage plugins tasks
   block:
     - name: Jellyfin | Get installed plugins
@@ -291,5 +286,3 @@
       retries: 30
       delay: 5
       when: install_plugins.changed
-  tags:
-    - update_jellyfin_plugins
