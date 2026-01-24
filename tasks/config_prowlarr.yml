@@ -108,19 +108,21 @@
         return_content: true
       register: existing_apps
 
-      # Radarr
-    - name: Prowlarr | Check Radarr configuration
+    - name: Prowlarr | Get Radarr API key
       become: true
       slurp:
         src: "{{ homeflix_apps_volume }}/radarr/config.xml"
       register: radarr_xml
 
-    - name: Prowlarr | Get Radarr api key
-      set_fact:
-        radarr_api_key: "{{ ((radarr_xml.content | b64decode) | regex_findall('<ApiKey>(.*?)</ApiKey>'))[0] }}"
+    - name: Prowlarr | Get Sonarr API key
+      become: true
+      slurp:
+        src: "{{ homeflix_apps_volume }}/sonarr/config.xml"
+      register: sonarr_xml
 
     - name: Prowlarr | Add Radarr application
       vars:
+        radarr_api_key: "{{ ((radarr_xml.content | b64decode) | regex_findall('<ApiKey>(.*?)</ApiKey>'))[0] }}"
         radarr_exists: "{{ existing_apps.json | selectattr('name', 'equalto', 'Radarr') | list | length > 0 }}"
       uri:
         url: "http://localhost:{{ homeflix_prowlarr_port }}/api/v1/applications"
@@ -146,20 +148,10 @@
         status_code: 201
       when: not radarr_exists
 
-      # Sonarr
-    - name: Prowlarr | Check Sonarr configuration
-      become: true
-      slurp:
-        src: "{{ homeflix_apps_volume }}/sonarr/config.xml"
-      register: sonarr_xml
-
-    - name: Prowlarr | Get Sonarr api key
-      set_fact:
-        sonarr_api_key: "{{ ((sonarr_xml.content | b64decode) | regex_findall('<ApiKey>(.*?)</ApiKey>'))[0] }}"
-
     - name: Prowlarr | Add Sonarr application
       vars:
         sonarr_exists: "{{ existing_apps.json | selectattr('name', 'equalto', 'Sonarr') | list | length > 0 }}"
+        sonarr_api_key: "{{ ((sonarr_xml.content | b64decode) | regex_findall('<ApiKey>(.*?)</ApiKey>'))[0] }}"
       uri:
         url: "http://localhost:{{ homeflix_prowlarr_port }}/api/v1/applications"
         method: POST
