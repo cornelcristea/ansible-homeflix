@@ -92,6 +92,22 @@ Prowlarr (Indexers) --> Flaresolverr (Cloudflare bypass)
     - homeflix
 ```
 
+## Tags
+
+When running the playbook to deploy the Homeflix services, specific tags can be used to perform targeted actions.
+
+| Tag | Description |
+|-----|-------------|
+| `update_docker_compose` | Update docker-compose file and redeploy services |
+| `update_bazarr` | Update Bazarr service |
+| `update_jellyfin` | Update Jellyfin service |
+| `update_prowlarr` | Update Prowlarr service |
+| `update_qbittorrent` | Update qBittorrent service |
+| `update_radarr` | Update Radarr service |
+| `update_recyclarr` | Update Recyclarr service |
+| `update_seerr` | Update Seer service |
+| `update_sonarr` | Update Sonarr service |
+
 
 ## Knowing issues
 
