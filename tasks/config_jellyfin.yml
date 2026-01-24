@@ -1,5 +1,14 @@
 ---
-- name: Jellyfin | Check configuration
+- name: Jellyfin | Wait until configuration is completed
+  uri:
+    url: "http://{{ homeflix_jellyfin_host }}/System/Info/Public"
+    method: GET
+  register: jellyfin_up
+  until: jellyfin_up.status == 200
+  retries: 30
+  delay: 5
+
+- name: Jellyfin | Check system configuration
   become: true
   slurp:
     src: "{{ homeflix_apps_volume }}/jellyfin/system.xml"
@@ -33,12 +42,10 @@
       vars:
         service_name: jellyfin
 
-    - name: Jellyfin | Wait until configuration is completed
+    - name: Jellyfin | Wait until service is up
       uri:
-        url: "http://{{ homeflix_jellyfin_host }}/Startup/Configuration"
+        url: "http://{{ homeflix_jellyfin_host }}/System/Info/Public"
         method: GET
-        headers:
-          X-Emby-Token: "{{ homeflix_jellyfin_api_key }}"
       register: jellyfin_up
       until: jellyfin_up.status == 200
       retries: 30
