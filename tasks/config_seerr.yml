@@ -5,19 +5,19 @@
     src: "{{ homeflix_apps_volume }}/seerr/settings.json"
   register: settings_file
 
-- name: Seerr | Check Radarr configuration
+- name: Seerr | Get Radarr API key
   slurp:
     src: "{{ homeflix_apps_volume }}/radarr/config.xml"
   register: radarr_xml
 
-- name: Seerr | Check Sonarr configuration
+- name: Seerr | Get Sonarr API key
   slurp:
     src: "{{ homeflix_apps_volume }}/sonarr/config.xml"
   register: sonarr_xml
 
-- name: Seerr | Set fact for settings
-  set_fact:
-    settings_file_json: "{{ settings_file.content | b64decode | from_json }}"
+# - name: Seerr | Set fact for settings
+#   set_fact:
+#     settings_file_json: "{{ settings_file.content | b64decode | from_json }}"
 
 # - name: Seerr | Determine first run
 #   set_fact:
@@ -107,11 +107,10 @@
 #   loop_control:
 #     labels: "{{ item.name }}"
 
-- set_fact:
+- name: Create configuration txt file
+  vars:
     radarr_api_key: "{{ ((radarr_xml.content | b64decode) | regex_findall('<ApiKey>(.*?)</ApiKey>'))[0] }}"
     sonarr_api_key: "{{ ((sonarr_xml.content | b64decode) | regex_findall('<ApiKey>(.*?)</ApiKey>'))[0] }}"
-
-- name: Create configuration txt file
   copy:
     dest: /tmp/seerr.txt
     content: |
