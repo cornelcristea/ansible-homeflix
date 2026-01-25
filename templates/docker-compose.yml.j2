@@ -19,28 +19,26 @@ services:
       - "{{ homeflix_apps_volume }}/{{ service.name }}:/config"
       - "{{ homeflix_data_volume }}:/data"
 {% endif %}
-{% if homeflix_traefik_network is defined %}
+{% if service.ports is defined and service.ports | length > 0 %}
+    ports:
+{% for port in service.ports %}
+      - "{{ port }}"
+{% endfor %}
+{% endif %}
+{% if traefik_network is defined %}
     networks:
-      - {{ homeflix_traefik_network }}
+      - {{ traefik_network }}
 {% if service.labels is defined %}
     labels:
 {% for label in service.labels %}
       - "{{ label }}"
 {% endfor %}
 {% endif -%}
-{% endif -%}
-{% if service.ports is defined and service.ports | length > 0
-    and not ( homeflix_traefik_network is defined and service.name == "jellyfin" ) %}
-    ports:
-{% for port in service.ports %}
-      - "{{ port }}"
-{% endfor %}
 {% endif %}
 
 {% endfor %}
-
-{%- if homeflix_traefik_network is defined %}
+{% if traefik_network is defined %}
 networks:
-  {{ homeflix_traefik_network }}:
+  {{ traefik_network }}:
     external: true
-{% endif -%}
+{% endif %}
