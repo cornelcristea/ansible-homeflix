@@ -1,22 +1,35 @@
 ---
 # defaults file for homeflix
 
+########################################################################
+# default password for qbittorrent
+# after deploy, change ONLY the password and save it to your host vars as ecrypted
+homeflix_qbittorrent_password: adminadmin
+########################################################################
+# default api key for bazarr
+# after deploy, generate a new one and save it to your host vars as ecrypted
+homeflix_bazarr_api_key: 463482c2b8172db0ba2736f6a0b3dbc7
+########################################################################
+# default api key for jellyfin
+# after deploy, generate a new one and save it to your host vars as ecrypted
+homeflix_jellyfin_api_key: fae9789ce96847aeb834dec33c67ee8e
+########################################################################
+# requires the traefik role to be deployed first
+# https://galaxy.ansible.com/ui/standalone/roles/cornelcristea/traefik
+# you need a real domain (free or paid) for public access
+# traefik acts as a reverse proxy and handles HTTPS certificates
+# makes jellyfin accessible from smart TVs or other external devices
+# if using tailscale for private access, this is not needed
+homeflix_host_domain: homeflix.example.com
+########################################################################
+
 homeflix_timezone: Europe/Bucharest
-
-# uncomment to enable traefik reverse proxy network and labels
-# this requires traefik role/app to be deployed first
-# homeflix_traefik_network: traefik_proxy
-
-# if traefik is used, update with your own domain or dns
-homeflix_jellyfin_domain: localhost
 
 homeflix_jellyfin_server_name: HomeFlix
 
-# overwrite this variable in your host vars
-# encrypsted passwords are recommended
 homeflix_jellyfin_users:
   - username: homeflix
-    password: StrongPass123!
+    password: StrongPass123! # encrypsted passwords are recommended
 
 homeflix_jellyfin_libraries:
   - name: "Movies"
@@ -26,8 +39,6 @@ homeflix_jellyfin_libraries:
     collection_type: "tvshows"
     location: "{{ homeflix_data_volume }}/tv"
 
-# each indexer has its mandatory fields
-# it causes a harder way to maintain a standard template list
 homeflix_prowlarr_indexers:
   - name: 1337x
     implementation: Cardigann
@@ -68,18 +79,3 @@ homeflix_prowlarr_indexers:
     fields:
       baseUrl: https://showrss.info
       definitionFile: showrss
-
-# default password for qbittorrent
-# after deploy, change ONLY the password and save it to your host vars as ecrypted
-homeflix_qbittorrent_password: adminadmin
-########################################################################
-
-# default api key for bazarr
-# after deploy, generate a new one and save it to your host vars as ecrypted
-homeflix_bazarr_api_key: 463482c2b8172db0ba2736f6a0b3dbc7
-########################################################################
-
-# default api key for jellyfin
-# after deploy, generate a new one and save it to your host vars as ecrypted
-homeflix_jellyfin_api_key: fae9789ce96847aeb834dec33c67ee8e
-########################################################################
