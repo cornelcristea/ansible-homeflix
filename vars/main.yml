@@ -81,10 +81,10 @@ homeflix_prowlarr_indexers:
   - name: 1337x
     implementation: Cardigann
     configContract: CardigannSettings
+    tags: [1]
     fields:
       baseUrl: https://x1337x.eu
       definitionFile: 1337x
-      tags: [1]
   - name: EZTV
     implementation: Cardigann
     configContract: CardigannSettings
@@ -94,17 +94,17 @@ homeflix_prowlarr_indexers:
   - name: LimeTorrents
     implementation: Cardigann
     configContract: CardigannSettings
+    tags: [1]
     fields:
       baseUrl: https://limetorrents.proxyninja.org
       definitionFile: limetorrents
-      tags: [1]
   - name: TorrentGalaxyClone
     implementation: Cardigann
     configContract: CardigannSettings
+    tags: [1]
     fields:
       baseUrl: https://torrentgalaxy.info/
       definitionFile: torrentgalaxyclone
-      tags: [1]
   - name: The Pirate Bay
     implementation: Cardigann
     configContract: CardigannSettings
