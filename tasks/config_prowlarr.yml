@@ -1,8 +1,10 @@
 ---
-- include_tasks: common/wait_for_service.yml
-  vars:
+- name: Prowlarr | Set facts for service
+  set_fact:
     service_name: prowlarr
     service_port: "{{ homeflix_prowlarr_port }}"
+
+- include_tasks: common/wait_for_service.yml
 
 - name: Prowlarr | Check configuration
   become: true
@@ -16,9 +18,6 @@
     prowlarr_first_run: "{{ ('<AuthenticationMethod>None</AuthenticationMethod>' in (config_xml.content | b64decode | string)) }}"
 
 - name: block - First run tasks
-  vars:
-    service_name: prowlarr
-    service_port: "{{ homeflix_prowlarr_port }}"
   block:
     - include_tasks: common/stop_service.yml
 

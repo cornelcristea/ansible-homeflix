@@ -1,4 +1,9 @@
 ---
+- name: qBittorrent | Set facts for service
+  set_fact:
+    service_name: qbittorrent
+    service_port: "{{ homeflix_qbittorrent_port }}"
+
 - name: qBittorrent | Check configuration
   become: true
   slurp:
@@ -10,9 +15,6 @@
     qbittorrent_first_run: "{{ 'Password_PBKDF2' not in (conf_file.content | b64decode) }}"
 
 - name: block - First run tasks
-  vars:
-    service_name: qbittorrent
-    service_port: "{{ homeflix_qbittorrent_port }}"
   block:
     - include_tasks: common/stop_service.yml
 

@@ -1,8 +1,10 @@
 ---
-- include_tasks: common/wait_for_service.yml
-  vars:
+- name: Bazarr | Set facts for service
+  set_fact:
     service_name: bazarr
     service_port: "{{ homeflix_bazarr_port }}"
+
+- include_tasks: common/wait_for_service.yml
 
 - name: Bazarr | Check configuration
   become: true
@@ -15,9 +17,6 @@
     bazarr_first_run: "{{ (config_yaml.content | b64decode | from_yaml).auth.type is none }}"
 
 - name: block - First run tasks
-  vars:
-    service_name: bazarr
-    service_port: "{{ homeflix_bazarr_port }}"
   block:
     - include_tasks: common/stop_service.yml
 

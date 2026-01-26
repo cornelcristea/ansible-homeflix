@@ -1,8 +1,10 @@
 ---
-- include_tasks: common/wait_for_service.yml
-  vars:
+- name: Jellyfin | Set facts for service
+  set_fact:
     service_name: jellyfin
     service_port: "{{ homeflix_jellyfin_port }}"
+
+- include_tasks: common/wait_for_service.yml
 
 - name: Jellyfin | Check system configuration
   become: true
@@ -15,9 +17,6 @@
     jellyfin_first_run: "{{ ('<IsStartupWizardCompleted>false</IsStartupWizardCompleted>' in (system_xml.content | b64decode | string)) }}"
 
 - name: block - First run tasks
-  vars:
-    service_name: jellyfin
-    service_port: "{{ homeflix_jellyfin_port }}"
   block:
     - include_tasks: common/stop_service.yml
 
@@ -35,9 +34,11 @@
         group: 1000
         mode: 0755
 
-    - include_tasks: common/restart_service.yml
+    - name: Jellyfin | Include task
+      include_tasks: common/restart_service.yml
 
-    - include_tasks: common/wait_for_service.yml
+    - name: Jellyfin | Include task
+      include_tasks: common/wait_for_service.yml
   when: jellyfin_first_run
 
 - name: block - Manage server name tasks
@@ -265,11 +266,9 @@
 
 # do not change position of the following tasks block
 - name: block - Restart container tasks
-  vars:
-    service_name: jellyfin
-    service_port: "{{ homeflix_jellyfin_port }}"
   block:
     - include_tasks: common/restart_service.yml
+
     - include_tasks: common/wait_for_service.yml
   when: >
     ( branding_xml is defined and branding_xml.changed ) or
