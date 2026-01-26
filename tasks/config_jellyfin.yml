@@ -1,12 +1,8 @@
 ---
-- name: Jellyfin | Wait until configuration is completed
-  uri:
-    url: "http://localhost:{{ homeflix_jellyfin_port }}/System/Info/Public"
-    method: GET
-  register: jellyfin_up
-  until: jellyfin_up.status == 200
-  retries: 30
-  delay: 5
+- include_tasks: common/wait_for_service.yml
+  vars:
+    service_name: jellyfin
+    service_port: "{{ homeflix_jellyfin_port }}"
 
 - name: Jellyfin | Check system configuration
   become: true
@@ -42,14 +38,10 @@
       vars:
         service_name: jellyfin
 
-    - name: Jellyfin | Wait until service is up
-      uri:
-        url: "http://localhost:{{ homeflix_jellyfin_port }}/System/Info/Public"
-        method: GET
-      register: jellyfin_up
-      until: jellyfin_up.status == 200
-      retries: 30
-      delay: 5
+    - include_tasks: common/wait_for_service.yml
+      vars:
+        service_name: jellyfin
+        service_port: "{{ homeflix_jellyfin_port }}"
   when: jellyfin_first_run
 
 - name: block - Manage server name
