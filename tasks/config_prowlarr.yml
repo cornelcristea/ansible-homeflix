@@ -3,17 +3,23 @@
   vars:
     service_port: "{{ homeflix_prowlarr_port }}"
   include_tasks: wait_for_service.yml
+  tags:
+    - always
 
 - name: Prowlarr | Check configuration
   become: true
   slurp:
     src: "{{ homeflix_apps_volume }}/prowlarr/config.xml"
   register: config_xml
+  tags:
+    - always
 
 - name: Prowlarr | Determine first run
   set_fact:
     prowlarr_api_key: "{{ ((config_xml.content | b64decode) | regex_findall('<ApiKey>(.*?)</ApiKey>'))[0] }}"
     prowlarr_first_run: "{{ ('<AuthenticationMethod>None</AuthenticationMethod>' in (config_xml.content | b64decode | string)) }}"
+  tags:
+    - always
 
 - name: block - First run tasks
   block:
@@ -73,8 +79,8 @@
           name: "{{ item.name }}"
           enable: true
           implementation: "{{ item.implementation }}"
-          configContract: "{{ item.config_contract }}"
-          appProfileId: "{{ item.app_profile_ids | default(1) }}"
+          configContract: "{{ item.configContract }}"
+          appProfileId: "{{ item.appProfileId | default(1) }}"
           priority: "{{ item.priority | default(25) }}"
           fields: "{{ item.fields | dict2items(key_name='name', value_name='value') }}"
           tags: "{{ item.tags | default([]) }}"
