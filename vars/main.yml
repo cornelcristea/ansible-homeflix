@@ -80,40 +80,40 @@ homeflix_jellyfin_libraries:
 homeflix_prowlarr_indexers:
   - name: 1337x
     implementation: Cardigann
-    config_contract: CardigannSettings
+    configContract: CardigannSettings
     fields:
       baseUrl: https://x1337x.eu
       definitionFile: 1337x
       tags: [1]
   - name: EZTV
     implementation: Cardigann
-    config_contract: CardigannSettings
+    configContract: CardigannSettings
     fields:
       baseUrl: https://eztvx.to
       definitionFile: eztv
   - name: LimeTorrents
     implementation: Cardigann
-    config_contract: CardigannSettings
+    configContract: CardigannSettings
     fields:
       baseUrl: https://limetorrents.proxyninja.org
       definitionFile: limetorrents
       tags: [1]
   - name: TorrentGalaxyClone
     implementation: Cardigann
-    config_contract: CardigannSettings
+    configContract: CardigannSettings
     fields:
       baseUrl: https://torrentgalaxy.info/
       definitionFile: torrentgalaxyclone
-    tags: [1]
+      tags: [1]
   - name: The Pirate Bay
     implementation: Cardigann
-    config_contract: CardigannSettings
+    configContract: CardigannSettings
     fields:
       baseUrl: https://thepiratebay.zone
       definitionFile: thepiratebay
   - name: showRSS
     implementation: Cardigann
-    config_contract: CardigannSettings
+    configContract: CardigannSettings
     fields:
       baseUrl: https://showrss.info
       definitionFile: showrss
