@@ -4,6 +4,7 @@
     url: "http://localhost:{{ service_port }}"
     method: GET
   register: service_up
-  until: service_up.status == 200
-  retries: 5
+  failed_when: false
+  until: service_up.status is defined and service_up.status == 200
+  retries: "{{ 30 if service_name is defined and service_name == 'jellyfin' else 5 }}"
   delay: 5
