@@ -23,61 +23,21 @@ homeflix_host_domain: homeflix.example.com
 
 homeflix_timezone: Europe/Bucharest
 
+# jellyfin variables
 homeflix_jellyfin_server_name: HomeFlix
 
 homeflix_jellyfin_users:
   - username: homeflix
     password: StrongPass123! # encrypsted passwords are recommended
 
-homeflix_jellyfin_libraries:
-  - name: "Movies"
-    collection_type: "movies"
-    location: "{{ homeflix_data_volume }}/movies"
-  - name: "TV Shows"
-    collection_type: "tvshows"
-    location: "{{ homeflix_data_volume }}/tv"
-
 homeflix_jellyfin_plugins:
   - name: SkinManager
     src: https://github.com/danieladov/jellyfin-plugin-skin-manager/releases/download/2.0.2/Jellyfin-Plugin-SkinManager.zip
 
-homeflix_prowlarr_indexers:
-  - name: 1337x
-    implementation: Cardigann
-    config_contract: CardigannSettings
-    fields:
-      baseUrl: https://x1337x.eu
-      definitionFile: 1337x
-      tags: [1]
-  - name: EZTV
-    implementation: Cardigann
-    config_contract: CardigannSettings
-    fields:
-      baseUrl: https://eztvx.to
-      definitionFile: eztv
-  - name: LimeTorrents
-    implementation: Cardigann
-    config_contract: CardigannSettings
-    fields:
-      baseUrl: https://limetorrents.proxyninja.org
-      definitionFile: limetorrents
-      tags: [1]
-  - name: TorrentGalaxyClone
-    implementation: Cardigann
-    config_contract: CardigannSettings
-    fields:
-      baseUrl: https://torrentgalaxy.info/
-      definitionFile: torrentgalaxyclone
-    tags: [1]
-  - name: The Pirate Bay
-    implementation: Cardigann
-    config_contract: CardigannSettings
-    fields:
-      baseUrl: https://thepiratebay.zone
-      definitionFile: thepiratebay
-  - name: showRSS
-    implementation: Cardigann
-    config_contract: CardigannSettings
-    fields:
-      baseUrl: https://showrss.info
-      definitionFile: showrss
+homeflix_jellyfin_splash_screen_enabled: false
+
+homeflix_jellyfin_custom_css: []
+
+homeflix_jellyfin_libraries_extra: []
+
+homeflix_prowlarr_indexers_extra: []

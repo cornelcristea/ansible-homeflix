@@ -65,3 +65,55 @@ homeflix_docker_services:
     image: lscr.io/linuxserver/sonarr:latest
     ports:
       - "{{ homeflix_sonarr_port }}:8989"
+
+homeflix_jellyfin_login_disclaimer: |
+  Deployed by Ansible @ cornelcristea.homeflix
+
+homeflix_jellyfin_libraries:
+  - name: "Movies"
+    collection_type: "movies"
+    location: "{{ homeflix_data_volume }}/movies"
+  - name: "TV Shows"
+    collection_type: "tvshows"
+    location: "{{ homeflix_data_volume }}/tv"
+
+homeflix_prowlarr_indexers:
+  - name: 1337x
+    implementation: Cardigann
+    config_contract: CardigannSettings
+    fields:
+      baseUrl: https://x1337x.eu
+      definitionFile: 1337x
+      tags: [1]
+  - name: EZTV
+    implementation: Cardigann
+    config_contract: CardigannSettings
+    fields:
+      baseUrl: https://eztvx.to
+      definitionFile: eztv
+  - name: LimeTorrents
+    implementation: Cardigann
+    config_contract: CardigannSettings
+    fields:
+      baseUrl: https://limetorrents.proxyninja.org
+      definitionFile: limetorrents
+      tags: [1]
+  - name: TorrentGalaxyClone
+    implementation: Cardigann
+    config_contract: CardigannSettings
+    fields:
+      baseUrl: https://torrentgalaxy.info/
+      definitionFile: torrentgalaxyclone
+    tags: [1]
+  - name: The Pirate Bay
+    implementation: Cardigann
+    config_contract: CardigannSettings
+    fields:
+      baseUrl: https://thepiratebay.zone
+      definitionFile: thepiratebay
+  - name: showRSS
+    implementation: Cardigann
+    config_contract: CardigannSettings
+    fields:
+      baseUrl: https://showrss.info
+      definitionFile: showrss
