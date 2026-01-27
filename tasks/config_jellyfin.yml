@@ -117,7 +117,7 @@
         label: "{{ item.username }}"
       when: item.username not in existing_users_names
 
-    - name: Jellyfin | Delete users
+    - name: Jellyfin | Remove users
       vars:
         users_to_keep: "{{ (homeflix_jellyfin_users | map(attribute='username') | list) + ['admin'] }}"
         users_to_delete: "{{ existing_users.json | rejectattr('Name', 'in', users_to_keep) | list }}"
