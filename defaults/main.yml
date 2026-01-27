@@ -1,6 +1,15 @@
 ---
 # defaults file for homeflix
 
+# requires the traefik role to be deployed first
+# https://galaxy.ansible.com/ui/standalone/roles/cornelcristea/traefik
+# you need a real domain (free or paid) for public access
+# traefik acts as a reverse proxy and handles HTTPS certificates
+# makes jellyfin accessible from smart TVs or other external devices
+# if using tailscale for private access, this is not needed
+homeflix_host_domain: homeflix.example.com
+
+# timezone for docker services
 homeflix_timezone: Europe/Bucharest
 
 # default password for qbittorrent
@@ -15,22 +24,14 @@ homeflix_bazarr_api_key: 463482c2b8172db0ba2736f6a0b3dbc7
 # after deploy, generate a new one and save it to your host vars as ecrypted
 homeflix_jellyfin_api_key: fae9789ce96847aeb834dec33c67ee8e
 
-# requires the traefik role to be deployed first
-# https://galaxy.ansible.com/ui/standalone/roles/cornelcristea/traefik
-# you need a real domain (free or paid) for public access
-# traefik acts as a reverse proxy and handles HTTPS certificates
-# makes jellyfin accessible from smart TVs or other external devices
-# if using tailscale for private access, this is not needed
-homeflix_host_domain: homeflix.example.com
-
-# jellyfin variables
-homeflix_jellyfin_server_name: HomeFlix
-
+# use ansible vault to encrypt the passwords
+# is_admin: make the user an admin (not mandatory, by default is false)
+# is_hidden: enable/disable login panel visibility (not mandatory, by default is false)
 homeflix_jellyfin_users:
   - username: homeflix
-    password: StrongPass123! # encrypsted passwords are recommended
-
-homeflix_jellyfin_splash_screen_enabled: false
+    password: pass123
+    is_admin: false
+    is_hidden: true
 
 # homeflix_jellyfin_plugins:
 #   - name: Example
@@ -43,6 +44,10 @@ homeflix_jellyfin_plugins: []
 #     --bold: 18px
 #   }
 homeflix_jellyfin_custom_css: []
+
+homeflix_jellyfin_server_name: HomeFlix
+
+homeflix_jellyfin_splash_screen_enabled: false
 
 homeflix_jellyfin_libraries_extra: []
 
