@@ -96,9 +96,10 @@ The role use the following variables
 - Traefik reverse proxy network is optional. The `jellyfin_host_domain` will work only if exist `traefik_network` variable.  
 - Each service has default user `admin` and a default password `admin` (for qBittorent, the password is `adminadmin`). **After first deploy, the passowrds have to be changed.**
 - Jellyfin and Bazarr have a default API key that needs to be generated after first deploy and save them as variables (check `default.yml`). Do same thing with qBittorrent password.
-- Always use **encrypted passwords** in host_vars for sensitive services.  
-- Make sure **ports are available** and **media folders exist** before deployment.  
+- Always use **encrypted passwords** in playbook for sensitive services.  
+- Make sure **ports are available** before deployment.  
 - <b>After deployment, update API keys and passwords to secure values.</b>
+- <b>The role does not use any VPN for download. Use on your own</b>
 
 ## Playbook example
 
@@ -139,7 +140,6 @@ When running the playbook to deploy the Homeflix services, specific tags can be 
 - The `Root folder` for Radarr and Sonarr has to be set manually from Web UI
 - For Bazarr, the `Language profile` has to be set manually
 - Seerr cannot be configured using API.
-- <b>The role does not contain any VPN</b>
 
 ## How to contribute
 

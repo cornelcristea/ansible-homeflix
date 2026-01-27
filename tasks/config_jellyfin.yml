@@ -175,10 +175,6 @@
     - update_jellyfin_users
 
 - name: block - Manage libraries tasks
-  # NOTE:
-  # library location fields in not reconized via API request
-  # for new libraries, it has to be added manually from Web UI
-  # for movies and tv shows, location is present in database
   # TO DO:
   # delete libraries with Ansible
   block:
@@ -203,9 +199,9 @@
           Content-Type: application/json
         body_format: json
         body:
-          Locations: ["{{ item.location }}"]
           LibraryOptions:
-            AutomaticRefreshIntervalDays: 1
+            PathInfos:
+              - Path: "{{ item.path }}"
         status_code: 204
         follow_redirects: all
       loop: "{{ jellyfin_libraries }}"
