@@ -1,14 +1,6 @@
 ---
 # defaults file for homeflix
 
-# requires the traefik role to be deployed first
-# https://galaxy.ansible.com/ui/standalone/roles/cornelcristea/traefik
-# you need a real domain (free or paid) for public access
-# traefik acts as a reverse proxy and handles HTTPS certificates
-# makes jellyfin accessible from smart TVs or other external devices
-# if using tailscale for private access, this is not needed
-homeflix_host_domain: homeflix.example.com
-
 # timezone for docker services
 homeflix_timezone: Europe/Bucharest
 
@@ -23,6 +15,15 @@ homeflix_bazarr_api_key: 463482c2b8172db0ba2736f6a0b3dbc7
 # default api key for jellyfin
 # after deploy, generate a new one and save it to your host vars as ecrypted
 homeflix_jellyfin_api_key: fae9789ce96847aeb834dec33c67ee8e
+
+# requires the traefik role to be deployed first
+# https://galaxy.ansible.com/ui/standalone/roles/cornelcristea/traefik
+# you need a real domain (free or paid) for public access
+# traefik acts as a reverse proxy and handles HTTPS certificates
+# makes jellyfin accessible from smart TVs or other external devices
+# if using tailscale for private access, this is not needed
+# homeflix_jellyfin_host_domain: myhomeflix.com
+homeflix_jellyfin_host_domain: []
 
 # use ansible vault to encrypt the passwords
 # is_admin: make the user an admin (not mandatory, by default is false)
