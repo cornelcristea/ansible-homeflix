@@ -75,7 +75,7 @@ homeflix_jellyfin_libraries:
     path: /data/movies
   - name: TV Shows
     collection_type: tvshows
-    path: /data/tv"
+    path: /data/tv
 
 homeflix_prowlarr_indexers:
   - name: 1337x
