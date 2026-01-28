@@ -136,10 +136,10 @@ When running the playbook to deploy the Homeflix services, specific tags can be 
 
 ## Knowing issues
 
-- For Radarr, the `Rename movies` option cannot be enabled via API and it has to be enabled manually from Web UI
+- The `Rename movies` option for Radarr has to be enabled manually from Web UI
 - The `Root folder` for Radarr and Sonarr has to be set manually from Web UI
-- For Bazarr, the `Language profile` has to be set manually
-- Seerr cannot be configured using API.
+- The `Language profile` For Bazarr has to be created manually from Web UI
+- The `Seerr` service has to be configured manually
 
 ## How to contribute
 
