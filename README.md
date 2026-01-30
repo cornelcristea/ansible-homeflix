@@ -90,7 +90,6 @@ The role use the following variables
 | `homeflix_jellyfin_libraries` | Default Jellyfin libraries. | Movies, TV Shows |
 | `homeflix_prowlarr_indexers` | Default Prowlarr indexers configuration. | LimeTorrents, 1337x, etc. |
 
-
 ## Notes
 
 - Traefik reverse proxy network is optional. The `jellyfin_host_domain` will work only if exist `traefik_network` variable.  
