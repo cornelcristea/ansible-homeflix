@@ -123,8 +123,6 @@
         body:
           Name: "{{ item.username }}"
           Password: "{{ item.password }}"
-          AuthenticationProviderId: "Jellyfin.Server.Implementations.Users.DefaultAuthenticationProvider"
-          PasswordResetProviderId: "Jellyfin.Server.Implementations.Users.DefaultPasswordResetProvider"
         status_code: 200
       loop: "{{ homeflix_jellyfin_users }}"
       loop_control:
@@ -168,21 +166,18 @@
           X-Emby-Token: "{{ homeflix_jellyfin_api_key }}"
           Content-Type: "application/json"
         body_format: json
-        body: >
-          "{{ existing_user_policy | combine({
-            'IsAdministrator': item.isAdmin | default(false),
-            'IsHidden': item.isHidden | default(true),
-            'EnableUserPreferenceAccess': true,
-            'EnableRemoteAccess': true,
-            'EnableAllFolders': true}, recursive=True)
-          }}"
+        body:
+          IsAdministrator: "{{ item.isAdmin | default(false) }}"
+          IsHidden: "{{ item.isHidden | default(true) }}"
+          EnableAllFolders: true
+          EnableUserPreferenceAccess: true
+          EnableRemoteAccess: true
+          AuthenticationProviderId: "Jellyfin.Server.Implementations.Users.DefaultAuthenticationProvider"
+          PasswordResetProviderId: "Jellyfin.Server.Implementations.Users.DefaultPasswordResetProvider"
         status_code: 204
       loop: "{{ homeflix_jellyfin_users }}"
       loop_control:
         label: "{{ item.username }}"
-      when: >
-        existing_user_policy.IsHidden != item.isHidden | default(true) or
-        existing_user_policy.IsAdministrator != item.isAdmin | default(false)
   tags:
     - update_jellyfin_users
 
