@@ -2,7 +2,7 @@
 ---
 # Services installation
 - import_tasks: install_services.yml
-  when: molecule_test or molecule_test is not defined
+  when: molecule_test | default(true)
   tags:
     - update_docker_compose
     - update_jellyfin
