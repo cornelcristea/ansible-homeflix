@@ -1,18 +1,64 @@
 # tasks file for homeflix
 ---
-- name: Import task to install the services
-  import_tasks: install_services.yml
+- name: block - Manage directories tasks
   when: molecule_test | default(true)
+  block:
+    - name: Create homeflix directories
+      file:
+        path: "{{ item }}"
+        state: directory
+        owner: 1000
+        group: 1000
+        mode: 0755
+      loop:
+        - "{{ homeflix_apps_volume }}"
+        - "{{ homeflix_data_volume }}"
+
+    - name: Create services directories
+      file:
+        path: "{{ homeflix_apps_volume }}/{{ item.name }}"
+        state: directory
+        owner: 1000
+        group: 1000
+        mode: 0755
+      loop: "{{ homeflix_docker_services }}"
+      loop_control:
+        label: "{{ item.name }}"
+
+    - name: Create data directories
+      file:
+        path: "{{ homeflix_data_volume }}/{{ item }}"
+        state: directory
+        owner: 1000
+        group: 1000
+        mode: 0755
+      loop: "{{ homeflix_data_folders + homeflix_data_folders_extra }}"
+      loop_control:
+        label: "{{ item }}"
+  tags:
+    - update_homeflix_dirs
+
+- name: block - Manage docker compose tasks
+  when: molecule_test | default(true)
+  block:
+    - name: Generate docker compose file
+      template:
+        src: docker-compose.yml.j2
+        dest: "{{ homeflix_apps_volume }}/docker-compose.yml"
+        owner: 1000
+        group: 1000
+        mode: 0644
+
+    - name: Run docker compose
+      become: true
+      community.docker.docker_compose_v2:
+        project_src: "{{ homeflix_apps_volume }}"
+        state: present
+        remove_orphans: true
+        build: never
+      register: services_result
   tags:
     - update_docker_compose
-    - update_jellyfin
-    - update_bazarr
-    - update_sonarr
-    - update_radarr
-    - update_seerr
-    - update_prowlarr
-    - update_qbittorrent
-    - update_recyclarr
 
 - name: Import tasks to configure the services
   when: molecule_test is not defined
